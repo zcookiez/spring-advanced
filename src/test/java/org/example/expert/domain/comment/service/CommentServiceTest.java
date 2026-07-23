@@ -5,6 +5,7 @@ import org.example.expert.domain.comment.dto.response.CommentSaveResponse;
 import org.example.expert.domain.comment.entity.Comment;
 import org.example.expert.domain.comment.repository.CommentRepository;
 import org.example.expert.domain.common.dto.AuthUser;
+import org.example.expert.domain.common.exception.InvalidRequestException;
 import org.example.expert.domain.common.exception.ServerException;
 import org.example.expert.domain.todo.entity.Todo;
 import org.example.expert.domain.todo.repository.TodoRepository;
@@ -43,7 +44,8 @@ class CommentServiceTest {
         given(todoRepository.findById(anyLong())).willReturn(Optional.empty());
 
         // when
-        ServerException exception = assertThrows(ServerException.class, () -> {
+        // 존재하지 않는 id(todo id) 없는 값으로 코멘트 저장하려 함.
+        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> {
             commentService.saveComment(authUser, todoId, request);
         });
 

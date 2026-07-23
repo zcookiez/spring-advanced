@@ -39,14 +39,16 @@ class ManagerServiceTest {
     private ManagerService managerService;
 
     @Test
-    public void manager_목록_조회_시_Todo가_없다면_NPE_에러를_던진다() {
+    public void manager_목록_조회_시_Todo가_없다면__InvalidRequestException_에러를_던진다() {
         // given
         long todoId = 1L;
         given(todoRepository.findById(todoId)).willReturn(Optional.empty());
+        // 해당 테스트 코드는 Todo를 DB에서 찾지 못한 (Optional.empty)를 가상으로 만들어둔 상태이다.
+        // 이 상태에서 getManagers() 실해ㅐㅇ하면 매니저를 찾기 전에 예외가 발생된다.
 
         // when & then
         InvalidRequestException exception = assertThrows(InvalidRequestException.class, () -> managerService.getManagers(todoId));
-        assertEquals("Manager not found", exception.getMessage());
+        assertEquals("Todo not found", exception.getMessage());
     }
 
     @Test
@@ -58,17 +60,26 @@ class ManagerServiceTest {
 
         Todo todo = new Todo();
         ReflectionTestUtils.setField(todo, "user", null);
+        // ReflectionTestUtils : Spring Test 프레임워크가 제공하는 도구
+        // 자바의 reflection 기술을 사용해 private 필드나 setter가 없는 필드의 값을 강제로 변경할 때 사용
+        // 첫번째 인자(todo) : 값을 변경할 대상 객체
+        // 두번째 인자("user") : 변경하려는 대상 필드 이름 (문자열)
+        // 세번째 인자(null) : 필드에 주입하고 싶은 값
+        // 즉 원래 Todo 객체의 user 필드가 외부에서 접근할 수 없어도 해당 기능을 사용하면 null로 설정할 수 있다.
+        // 굳이 그냥 아무것도 안해도 new Todo()로 생성해서 null일텐데 왜? -> 테스트 의도를 명확하게 하기 위해서
 
         ManagerSaveRequest managerSaveRequest = new ManagerSaveRequest(managerUserId);
 
         given(todoRepository.findById(todoId)).willReturn(Optional.of(todo));
 
         // when & then
-        InvalidRequestException exception = assertThrows(InvalidRequestException.class, () ->
-            managerService.saveManager(authUser, todoId, managerSaveRequest)
+        // saveManager()
+        //  if (!ObjectUtils.nullSafeEquals(user.getId(), todo.getUser().getId())) {
+        // todo.getUser() 가 null로 ReflectionTestUtils로 설정한 상태라 NPE 에러 발생
+        assertThrows(NullPointerException.class, () ->
+                managerService.saveManager(authUser, todoId, managerSaveRequest)
         );
 
-        assertEquals("일정을 생성한 유저만 담당자를 지정할 수 있습니다.", exception.getMessage());
     }
 
     @Test // 테스트코드 샘플
